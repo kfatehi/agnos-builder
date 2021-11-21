@@ -56,6 +56,7 @@ RUN apt-get install --no-install-recommends -yq \
     xsltproc \
     xz-utils
 
+
 RUN ./autogen.sh
 RUN ./configure --disable-regenerate-docu --disable-doc
 RUN make -j
@@ -66,9 +67,22 @@ RUN git clone https://gitlab.freedesktop.org/wayland/weston /root/workspace/west
 WORKDIR /root/workspace/weston
 
 
-RUN apt install --no-install-recommends -yq liblcms2-2 liblcms2-dev
+# needed by weston
+RUN apt install --no-install-recommends -yq liblcms2-2 liblcms2-dev freerdp2-dev libxcb-composite0-dev libcolord-dev
 
+# to get rid of -Dremoting=false you need this and gstreamer-allocators, and i couldnt find allocators so...
+# RUN apt install --no-install-recommends -yq libgstreamer1.0-dev
+# RUN apt download libgbm-dev && ar x libgbm-dev_21.0.3-0ubuntu0.3~20.04.4_arm64.deb && tar -xf data.tar.xz
 
-RUN meson -Dimage-webp=false builddir/ --prefix=/weston-prefix
+WORKDIR /root/workspace
+RUN mkdir libgbm-dev
+WORKDIR /root/workspace/libgbm-dev
+RUN apt download libgbm-dev
+RUN ar x libgbm-dev_21.0.3-0ubuntu0.3~20.04.4_arm64.deb
+RUN tar -xf data.tar.xz
+ADD gbm.pc /usr/lib/aarch64-linux-gnu/pkgconfig/gbm.pc
+WORKDIR /root/workspace/weston
+
+RUN meson -Dimage-webp=false -Dbackend-x11=false -Dremoting=false -Dpipewire=false -Dtest-junit-xml=false builddir/ --prefix=/weston-prefix
 RUN ninja -C builddir/ install
 
