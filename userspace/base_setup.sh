@@ -148,6 +148,7 @@ apt-get install --no-install-recommends -yq \
     libfontconfig1:armhf \
     libfreetype6:armhf \
     libgbm1:armhf \
+    libgbm-dev:armhf \
     libgcc-5-dev-armhf-cross \
     libgcc1:armhf \
     libglib2.0-0:armhf \

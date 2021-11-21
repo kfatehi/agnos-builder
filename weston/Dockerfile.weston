@@ -74,15 +74,6 @@ RUN apt install --no-install-recommends -yq liblcms2-2 liblcms2-dev freerdp2-dev
 # RUN apt install --no-install-recommends -yq libgstreamer1.0-dev
 # RUN apt download libgbm-dev && ar x libgbm-dev_21.0.3-0ubuntu0.3~20.04.4_arm64.deb && tar -xf data.tar.xz
 
-WORKDIR /root/workspace
-RUN mkdir libgbm-dev
-WORKDIR /root/workspace/libgbm-dev
-RUN apt download libgbm-dev
-RUN ar x libgbm-dev_21.0.3-0ubuntu0.3~20.04.4_arm64.deb
-RUN tar -xf data.tar.xz
-ADD gbm.pc /usr/lib/aarch64-linux-gnu/pkgconfig/gbm.pc
-WORKDIR /root/workspace/weston
-
 RUN meson -Dimage-webp=false -Dbackend-x11=false -Dremoting=false -Dpipewire=false -Dtest-junit-xml=false builddir/ --prefix=/weston-prefix
 RUN ninja -C builddir/ install
 
