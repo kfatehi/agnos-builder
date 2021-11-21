@@ -6,27 +6,15 @@ RUN pip install meson ninja
 COPY enable-apt/var/lib/apt /var/lib/apt
 COPY enable-apt/etc/apt /etc/apt
 RUN sudo apt update
-RUN apt install -y libpam0g-dev:armhf libdrm-dev:armhf wayland-protocols:armhf
-
 
 #Create a workspace
 RUN mkdir /root/workspace
 RUN mkdir /weston-prefix
 
-# clone latest DRM
-RUN git clone https://gitlab.freedesktop.org/mesa/drm.git /root/workspace/libdrm
-WORKDIR /root/workspace/libdrm
-RUN meson builddir/
-RUN ninja -C builddir/ install
-
-# RUN git clone https://gitlab.freedesktop.org/wayland/wayland-protocols.git /root/workspace/wayland-protocols
-# WORKDIR /root/workspace/wayland-protocols
-# RUN meson builddir/
-# RUN ninja -C builddir/ install
-
+# PAM exists but meson isn't happy with it for some reason. this build takes
+# a long time but at least it satisfies weston's meson.
 RUN git clone https://github.com/linux-pam/linux-pam.git /root/workspace/linux-pam
 WORKDIR /root/workspace/linux-pam
-# RUN apt install -y autopoint:armhf gettext:armhf byacc:armhf flex:armhf bison:armhf
 RUN apt-get install --no-install-recommends -yq \
     autopoint \
     gettext \
@@ -56,23 +44,29 @@ RUN apt-get install --no-install-recommends -yq \
     xsltproc \
     xz-utils
 
-
 RUN ./autogen.sh
 RUN ./configure --disable-regenerate-docu --disable-doc
 RUN make -j
 RUN make install
 
+# clone latest DRM
+RUN git clone https://gitlab.freedesktop.org/mesa/drm.git /root/workspace/libdrm
+WORKDIR /root/workspace/libdrm
+RUN meson builddir/
+RUN ninja -C builddir/ install
+
 # clone latest Weston
 RUN git clone https://gitlab.freedesktop.org/wayland/weston /root/workspace/weston
 WORKDIR /root/workspace/weston
-
-
 # needed by weston
-RUN apt install --no-install-recommends -yq liblcms2-2 liblcms2-dev freerdp2-dev libxcb-composite0-dev libcolord-dev
-
+RUN apt install --no-install-recommends -yq wayland-protocols liblcms2-2 liblcms2-dev freerdp2-dev libxcb-composite0-dev libcolord-dev
 # to get rid of -Dremoting=false you need this and gstreamer-allocators, and i couldnt find allocators so...
 # RUN apt install --no-install-recommends -yq libgstreamer1.0-dev
 # RUN apt download libgbm-dev && ar x libgbm-dev_21.0.3-0ubuntu0.3~20.04.4_arm64.deb && tar -xf data.tar.xz
+
+
+RUN apt-get -o Dpkg::Options::="--force-overwrite" install -yq libgbm-dev
+
 
 RUN meson -Dimage-webp=false -Dbackend-x11=false -Dremoting=false -Dpipewire=false -Dtest-junit-xml=false builddir/ --prefix=/weston-prefix
 RUN ninja -C builddir/ install
