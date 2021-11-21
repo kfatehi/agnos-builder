@@ -64,6 +64,11 @@ RUN make install
 # clone latest Weston
 RUN git clone https://gitlab.freedesktop.org/wayland/weston /root/workspace/weston
 WORKDIR /root/workspace/weston
+
+
+RUN apt install --no-install-recommends -yq liblcms2-2 liblcms2-dev
+
+
 RUN meson -Dimage-webp=false builddir/ --prefix=/weston-prefix
 RUN ninja -C builddir/ install
 
