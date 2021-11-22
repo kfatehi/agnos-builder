@@ -20,3 +20,13 @@ if [[ ! -d enable-apt ]]; then
   tar -C ./enable-apt -zxf $ubtarball {etc,var/lib}/apt
 fi
 docker build -f Dockerfile.weston -t weston-builder .
+if [[ ! -d weston-builder-fs ]]; then
+  if [[ ! -f weston-builder-fs.tar ]]; then
+    CONTAINER_ID=$(docker container create --entrypoint /bin/bash weston-builder)
+    docker container export -o weston-builder-fs.tar $CONTAINER_ID
+    docker container rm $CONTAINER_ID > /dev/null
+  fi
+  mkdir weston-builder-fs
+  cd weston-builder-fs
+  tar -xvf ../weston-builder-fs.tar weston-prefix
+fi
