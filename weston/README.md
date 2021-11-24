@@ -16,17 +16,27 @@ And probably using "weston-prefix" instead of "/usr" as the prefix will have oth
 
 ## Testing
 
-For testing purposes I ended up doing the following (after build and install) on the tici itself over SSH:
+For testing purposes I ended up doing the following (after build and install) on the tici itself over SSH, as root:
+
+Allowed writing to /:
 
 ```
-sudo mount -o rw,remount /
+mount -o rw,remount /
 ```
 
-I copied the weston files into /weston-prefix (just to keep the paths consistent).
+Copied the weston files into /weston-prefix (since that's what I defined as the prefix during build):
 
-I also used `ldconfig` to allow it to find the shared libs (libweston)
+```
+mv /home/comma/weston-prefix/ /weston-prefix
+```
 
-I created this file based on the systemd service for weston:
+Ran `ldconfig` so that it can find the shared libs (libweston):
+
+```
+ldconfig /weston-prefix/lib/aarch64-linux-gnu/
+```
+
+Created this script based on the systemd service for weston:
 
 ```
 #!/bin/bash
@@ -44,6 +54,14 @@ echo 0 > /data/misc/display/sdm_dbg_cfg.txt
 LD_LIBRARY_PATH=/weston-prefix/lib/aarch64-linux-gnu
 /weston-prefix/bin/weston --idle-time=0 --tty=1 --config=/usr/comma/weston.ini #-B drm-backend.so
 ```
+
+Disable the comma and weston services:
+
+```
+systemctl disable comma weston
+```
+
+This way I could reboot and try the script out...
 
 I would run this normally to see what errors I would get, and they are the same I posted below.
 
@@ -217,4 +235,35 @@ weston-builder-fs/weston-prefix/bin/weston-multi-resource
 weston-builder-fs/weston-prefix/bin/weston-terminal
 weston-builder-fs/weston-prefix/bin/weston-dnd
 weston-builder-fs/weston-prefix/bin/weston-cliptest
+```
+
+## Try providing the driver
+
+so i just did a quick search on my tici and i see this:
+
+    /usr/lib/aarch64-linux-gnu/dri/msm_dri.so
+
+and if i look at the error i see
+
+    Nov 21 17:07:53 tici bash[49399]: MESA-LOADER: failed to open msm_drm: /usr/lib/dri/msm_drm_dri.so: cannot open shared object file: No such file or directory (search paths /usr/lib/aarch64-linux-gnu/dri:$${ORIGIN}/dri:/usr/lib/dri)
+
+
+so i wonder if the path and name are just incorrect... what happens if i just symlinked that ?
+
+nah just segfaults
+
+```
+[20:21:16.557] /dev/tty1 is already in graphics mode, is another display server running?
+[20:21:16.562] using /dev/dri/card0
+[20:21:16.562] DRM: does not support atomic modesetting
+[20:21:16.562] DRM: supports GBM modifiers
+[20:21:16.562] DRM: does not support picture aspect ratio
+[20:21:16.562] Loading module '/weston-prefix/lib/aarch64-linux-gnu/libweston-10/gl-renderer.so'
+failed to bind extensions
+failed to load driver: msm_drm
+[20:21:16.632] EGL client extensions: EGL_EXT_client_extensions
+               EGL_KHR_client_get_all_proc_addresses EGL_EXT_platform_base
+               EGL_KHR_platform_android EGL_KHR_platform_wayland
+               EGL_KHR_platform_gbm
+./run.sh: line 14: 48492 Segmentation fault      (core dumped) /weston-prefix/bin/weston --idle-time=0 --tty=1 --config=/usr/comma/weston.ini
 ```
